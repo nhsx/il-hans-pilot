@@ -1,0 +1,11 @@
+#!/bin/bash
+
+export PORT=${PORT:-8000}
+
+gunicorn --worker-tmp-dir /dev/shm \
+  --workers=2 \
+  --threads=4 \
+  --worker-class=gthread \
+  --log-file=- \
+  --bind=0:${PORT} \
+  management_interface.wsgi
