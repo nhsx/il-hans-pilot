@@ -1,5 +1,11 @@
-from django import forms
+import uuid
+from hashlib import scrypt
 
+from django import forms
+from django.core.exceptions import ValidationError
+
+from internal_integrations.management_api.client import ManagementAPIClient
+from internal_integrations.management_api.exceptions import ManagementAPIClientError
 from .models import CareProviderLocation, CareRecipient, RegisteredManager
 
 
@@ -19,9 +25,49 @@ class RegisteredManagerForm(forms.ModelForm):
 
 
 class CareRecipientForm(forms.ModelForm):
+    given_name = forms.CharField(max_length=64, required=True, label="Given Name")
+    family_name = forms.CharField(max_length=64, required=True, label="Family Name")
+    nhs_number = forms.CharField(max_length=16, required=True, label="NHS Number")
+    birth_date = forms.DateField(required=True, label="Birth Date")
+
     class Meta:
         model = CareRecipient
         exclude = ["id", "created_at", "updated_at"]
-        labels = {
-            "nhs_number": "NHS Number",
-        }
+
+    def clean(self):
+        subscription_id = self._create_subscription()
+        nhs_number_hash = self._generate_nhs_number_hash()
+        self.cleaned_data.update(
+            {
+                "subscription_id": subscription_id,
+                "nhs_number_hash": nhs_number_hash
+            }
+        )
+        return super().clean()
+
+    def save(self, commit: bool = True):
+        self.instance.subscription_id = self.cleaned_data["subscription_id"]
+        self.instance.nhs_number_hash = self.cleaned_data["nhs_number_hash"]
+        return super().save(commit=commit)
+
+    def _create_subscription(self) -> uuid.UUID:
+        try:
+            return ManagementAPIClient().create_subscription(
+                patient_given_name=self.cleaned_data["given_name"],
+                patient_family_name=self.cleaned_data["family_name"],
+                nhs_number=self.cleaned_data["nhs_number"],
+                birth_date=self.cleaned_data["birth_date"],
+            )
+        except ManagementAPIClientError as ex:
+            raise ValidationError(str(ex))
+
+    def _generate_nhs_number_hash(self) -> str:
+        # https://nhsx.github.io/il-hans-infrastructure/adrs/003-Do-not-use-NEMS-or-MESH
+        return scrypt(
+            self.cleaned_data["nhs_number"].encode(),
+            salt=str(self.cleaned_data["birth_date"]).encode(),
+            n=32768,
+            r=12,
+            p=6,
+            maxmem=2 ** 26,
+        ).hex()

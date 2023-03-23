@@ -33,17 +33,12 @@ class CareRecipientAdmin(admin.ModelAdmin):
         "provider_reference_id",
     )
     list_filter = ("care_provider_location_id",)
+    list_display = [field.name for field in CareRecipient._meta.get_fields()]
     form = CareRecipientForm
 
     def save_model(self, request, obj, form, change):
         obj = set_obj_created_updated(request, obj, form)
         super().save_model(request, obj, form, change)
-
-    def get_exclude(self, request, obj=None):
-        exclude = self.exclude
-        if obj and obj.nhs_number_hash:
-            exclude = ("nhs_number",)
-        return exclude
 
 
 @admin.register(RegisteredManager)
