@@ -63,7 +63,7 @@ class RegisteredManagerTests(TestCase):
 
     def test_str_method(self):
         manager = create_registered_manager()
-        self.assertEqual(str(manager), "Jehosephat McGibbons (My CQC Registered Manager ID)")
+        self.assertEqual(str(manager), "McGibbons, Jehosephat (My CQC Registered Manager ID)")
 
 
 class CareProviderLocationTests(TestCase):
