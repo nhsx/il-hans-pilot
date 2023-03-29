@@ -2,6 +2,7 @@ import csv
 from io import TextIOWrapper
 
 from django.contrib import admin, messages
+from django.core.exceptions import ValidationError
 from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.urls import path
@@ -62,7 +63,7 @@ class CareProviderLocationAdmin(admin.ModelAdmin):
         return "csvfile" in request.FILES
 
     def _is_csv_line_count_valid(self, csv_data_list) -> bool:
-        return len(csv_data_list) <= SETTINGS.CSV_IMPORT_MAX_LINES:
+        return len(csv_data_list) <= SETTINGS.CSV_IMPORT_MAX_LINES
 
     def _is_csv_column_set_valid(self, csv_data_list) -> bool:
         required_columns = ["NHS_NUMBER", "DOB", "FAMILY_NAME", "GIVEN_NAME", "PROVIDER_REFERENCE"]
@@ -84,8 +85,12 @@ class CareProviderLocationAdmin(admin.ModelAdmin):
                     provider_reference_id=care_recipient_dict["PROVIDER_REFERENCE"],
                     created_by_id=user_id,
                 )
-                care_recipient.clean()
-                care_recipient.save()
+                try:
+                    care_recipient.full_clean()
+                    care_recipient.save()
+                except ValidationError:
+                    pass  # add some logging here
+
                 if care_recipient.pk:
                     care_recipient_created_count += 1
         return care_recipient_created_count
