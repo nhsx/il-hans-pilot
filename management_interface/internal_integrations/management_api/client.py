@@ -41,7 +41,7 @@ class ManagementAPIClient:
             ],
             "name": [
                 {
-                    "use": "official",
+                    "use": "usual",
                     "family": patient_family_name,
                     "given": [
                         patient_given_name,

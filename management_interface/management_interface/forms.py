@@ -27,8 +27,8 @@ class RegisteredManagerForm(forms.ModelForm):
 class CareRecipientForm(forms.ModelForm):
     given_name = forms.CharField(max_length=64, required=True, label="Given Name")
     family_name = forms.CharField(max_length=64, required=True, label="Family Name")
-    nhs_number = forms.CharField(max_length=16, required=True, label="NHS Number")
-    birth_date = forms.DateField(required=True, label="Birth Date")
+    nhs_number = forms.CharField(max_length=16, required=True, label="NHS Number", help_text="e.g. 5991993823")
+    birth_date = forms.DateField(required=True, label="Birth Date", help_text="e.g. 1998-01-23")
 
     class Meta:
         model = CareRecipient
@@ -37,12 +37,9 @@ class CareRecipientForm(forms.ModelForm):
     def clean(self):
         subscription_id = self._create_subscription()
         nhs_number_hash = self._generate_nhs_number_hash()
-        self.cleaned_data.update(
-            {
-                "subscription_id": subscription_id,
-                "nhs_number_hash": nhs_number_hash
-            }
-        )
+        self.cleaned_data["subscription_id"] = subscription_id
+        self.cleaned_data["nhs_number_hash"] = nhs_number_hash
+        self.cleaned_data["nhs_number"] = "".join(self.cleaned_data["nhs_number"].split())
         return super().clean()
 
     def save(self, commit: bool = True):
