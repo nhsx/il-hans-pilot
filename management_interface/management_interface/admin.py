@@ -59,9 +59,7 @@ class CareProviderLocationAdmin(admin.ModelAdmin):
     form = CareProviderLocationForm
 
     def _is_csv_in_request_files(self, request) -> bool:
-        if len(request.FILES) == 0 or "csvfile" not in request.FILES:
-            return False
-        return True
+        return "csvfile" in request.FILES
 
     def _is_csv_line_count_valid(self, csv_data_list) -> bool:
         return len(csv_data_list) <= SETTINGS.CSV_IMPORT_MAX_LINES:
