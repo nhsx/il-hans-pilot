@@ -64,9 +64,7 @@ class CareProviderLocationAdmin(admin.ModelAdmin):
         return True
 
     def _is_csv_line_count_valid(self, csv_data_list) -> bool:
-        if len(csv_data_list) > SETTINGS.CSV_IMPORT_MAX_LINES:
-            return False
-        return True
+        return len(csv_data_list) <= SETTINGS.CSV_IMPORT_MAX_LINES:
 
     def _is_csv_column_set_valid(self, csv_data_list) -> bool:
         required_columns = ["NHS_NUMBER", "DOB", "FAMILY_NAME", "GIVEN_NAME", "PROVIDER_REFERENCE"]
