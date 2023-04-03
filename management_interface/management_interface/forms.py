@@ -44,17 +44,18 @@ class CareRecipientForm(forms.ModelForm):
         exclude = ["id", "created_at", "updated_at"]
 
     def clean(self):
+        if self.errors:
+            return
+
         self.cleaned_data["nhs_number"] = "".join(
             self.cleaned_data["nhs_number"].split()
         )
         self.cleaned_data["given_name"] = [
             name.strip() for name in self.cleaned_data["given_name"].split()
         ]
-        subscription_id = self._create_subscription()
-        nhs_number_hash = self._generate_nhs_number_hash()
-        self.cleaned_data["subscription_id"] = subscription_id
-        self.cleaned_data["nhs_number_hash"] = nhs_number_hash
-        return super().clean()
+        self.cleaned_data["subscription_id"] = self._create_subscription()
+        self.cleaned_data["nhs_number_hash"] = self._generate_nhs_number_hash()
+        return self.cleaned_data
 
     def save(self, commit: bool = True):
         self.instance.subscription_id = self.cleaned_data["subscription_id"]
