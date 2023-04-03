@@ -152,7 +152,7 @@ class CareRecipientTests(TestCase):
         location = self.create_care_provider_location_object(manager=manager)
         jeff = CareRecipient(
             care_provider_location=location,
-            subscription_id="42",
+            subscription_id=uuid4(),
             provider_reference_id="foobar",
         )
         jeff.nhs_number = "password"
