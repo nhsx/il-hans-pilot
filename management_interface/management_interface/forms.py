@@ -25,21 +25,35 @@ class RegisteredManagerForm(forms.ModelForm):
 
 
 class CareRecipientForm(forms.ModelForm):
-    given_name = forms.CharField(max_length=64, required=True, label="Given Name")
+    given_name = forms.CharField(
+        max_length=64,
+        required=True,
+        label="Given Names",
+        help_text="enter all given (first and middle) names, separated by spaces, e.g. Lavina Maxine",
+    )
     family_name = forms.CharField(max_length=64, required=True, label="Family Name")
-    nhs_number = forms.CharField(max_length=16, required=True, label="NHS Number", help_text="e.g. 5991993823")
-    birth_date = forms.DateField(required=True, label="Birth Date", help_text="e.g. 1998-01-23")
+    nhs_number = forms.CharField(
+        max_length=12, required=True, label="NHS Number", help_text="e.g. 999 999 9999"
+    )
+    birth_date = forms.DateField(
+        required=True, label="Birth Date", help_text="e.g. 1998-01-23"
+    )
 
     class Meta:
         model = CareRecipient
         exclude = ["id", "created_at", "updated_at"]
 
     def clean(self):
+        self.cleaned_data["nhs_number"] = "".join(
+            self.cleaned_data["nhs_number"].split()
+        )
+        self.cleaned_data["given_name"] = [
+            name.strip() for name in self.cleaned_data["given_name"].split()
+        ]
         subscription_id = self._create_subscription()
         nhs_number_hash = self._generate_nhs_number_hash()
         self.cleaned_data["subscription_id"] = subscription_id
         self.cleaned_data["nhs_number_hash"] = nhs_number_hash
-        self.cleaned_data["nhs_number"] = "".join(self.cleaned_data["nhs_number"].split())
         return super().clean()
 
     def save(self, commit: bool = True):
@@ -66,5 +80,5 @@ class CareRecipientForm(forms.ModelForm):
             n=32768,
             r=12,
             p=6,
-            maxmem=2 ** 26,
+            maxmem=2**26,
         ).hex()
