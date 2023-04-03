@@ -33,8 +33,11 @@ class CareRecipientAdmin(admin.ModelAdmin):
         "provider_reference_id",
     )
     list_filter = ("care_provider_location_id",)
-    list_display = [field.name for field in CareRecipient._meta.get_fields()]
+    list_display = ["provider_reference_id", "care_provider_location_name", "updated_at", "updated_by"]
     form = CareRecipientForm
+
+    def care_provider_location_name(self, obj):
+        return obj.care_provider_location.name
 
     def save_model(self, request, obj, form, change):
         obj = set_obj_created_updated(request, obj, form)
