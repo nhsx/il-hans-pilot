@@ -3,7 +3,6 @@ from io import TextIOWrapper
 from typing import List, Tuple, TypedDict
 from uuid import UUID
 
-from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.shortcuts import redirect
@@ -13,6 +12,12 @@ from django.utils.html import format_html
 
 from .configuration import SETTINGS
 from .enums import CSVImportMessages
+from typing import Iterable
+
+from django.contrib import admin, messages
+
+from internal_integrations.management_api.client import ManagementAPIClient
+from internal_integrations.management_api.exceptions import ManagementAPIClientError
 from .forms import CareProviderLocationForm, CareRecipientForm, RegisteredManagerForm
 from .models import CareProviderLocation, CareRecipient, RegisteredManager
 
@@ -50,6 +55,47 @@ class CareRecipientAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         obj = set_obj_created_updated(request, obj, form)
         super().save_model(request, obj, form, change)
+
+    def delete_queryset(self, request, queryset: Iterable[CareRecipient]):
+        for care_recipient in queryset:
+            try:
+                ManagementAPIClient().delete_subscription(
+                    care_recipient.subscription_id
+                )
+                care_recipient.delete()
+                self.message_user(
+                    request,
+                    f"{care_recipient} was deleted successfully",
+                    level=messages.INFO,
+                )
+            except ManagementAPIClientError as ex:
+                self.message_user(
+                    request,
+                    f"Could not delete {care_recipient}: {str(ex)}",
+                    level=messages.ERROR,
+                )
+
+    def delete_model(self, request, obj):
+        return self.delete_queryset(request, [obj])
+
+    def message_user(
+        self, request, message, level=messages.INFO, extra_tags="", fail_silently=False
+    ):
+        """
+        Django Admin's adds success message by default, which will be confusing
+        if only a subset of the objects were deleted successfully. We intercept these default messages
+        and take control of messages ourselves.
+        """
+        if message.startswith("Successfully deleted"):
+            return None
+
+        if message.startswith("The") and message.endswith("was deleted successfully."):
+            return None
+
+        super().message_user(request, message, level, extra_tags, fail_silently)
+
+    def has_change_permission(self, *args, **kwargs):
+        return False
 
 
 @admin.register(RegisteredManager)

@@ -61,3 +61,11 @@ class ManagementAPIClient:
             raise ManagementAPIClientError(operation_outcome.issue[0].diagnostics)
 
         return uuid.UUID(response.headers.get("X-Subscription-Id"))
+
+    def delete_subscription(self, subscription_id: uuid.UUID) -> None:
+        response = self.session.delete(
+            f"{self.base_url}/subscription/{subscription_id}"
+        )
+        if response.status_code >= 400:
+            operation_outcome = OperationOutcome(**response.json())
+            raise ManagementAPIClientError(operation_outcome.issue[0].diagnostics)
