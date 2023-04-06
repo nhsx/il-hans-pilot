@@ -1,4 +1,4 @@
-FROM python:3.10-slim-bullseye
+FROM --platform="linux/amd64" public.ecr.aws/docker/library/python:3.10-slim-bullseye AS builder
 
 EXPOSE 8000
 
