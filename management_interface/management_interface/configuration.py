@@ -14,6 +14,7 @@ class Settings:
     )
     APP_NAME: str = os.environ.get("APP_NAME", "management_interface")
     DEBUG: bool = bool(os.environ.get("HANS_MI_DEBUG", False))
+    CSRF_TRUSTED_ORIGINS: str = os.environ.get("CSRF_TRUSTED_ORIGINS", "http://localhost")
     CSV_IMPORT_MAX_LINES: int = 1000
 
 

@@ -6,11 +6,7 @@ services:
       - "8000:8000"
     # probably a hack: createsuperuser would fail if issued on existing DB (as the user already exists)
     # so to allow build command to finish and run the container, we force to ignore the error
-    command: >
-      sh -c "python manage.py migrate
-      && python manage.py collectstatic --no-input
-      && python manage.py createsuperuser --noinput || true
-      && python manage.py runserver 0.0.0.0:8000"
+    command: /app/start.sh
     volumes:
       - ./management_interface:/app
     environment:
