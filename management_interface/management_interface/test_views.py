@@ -1,5 +1,7 @@
 import os
 from http import HTTPStatus
+from unittest import mock
+from unittest.mock import MagicMock
 from uuid import uuid4
 
 from django.contrib.auth.models import User
@@ -8,6 +10,7 @@ from django.test import Client, TestCase
 from django.urls import reverse
 
 from .enums import CSVImportMessages
+from .forms import CareRecipientForm
 from .models import CareRecipient, RegisteredManager
 
 
@@ -130,19 +133,31 @@ class AdminCareProviderLocationTests(TestCase):
 
     def test_admin_upload_csv_file_successfully(self):
         csv_file = self._upload_test_data("patients_test_data.csv")
-        response = self._get_upload_file_response(csv_file)
-        csv_file.seek(0)
-        lines_count = len(csv_file.readlines())
-        messages = self._convert_messages_to_str(response)
+        with mock.patch.object(
+            CareRecipientForm,
+            CareRecipientForm._create_subscription.__name__,
+            MagicMock(side_effect=uuid4),
+        ) as _create_subscription_mocked:
+            response = self._get_upload_file_response(csv_file)
+            csv_file.seek(0)
+            lines_count = len(csv_file.readlines())
+            messages = self._convert_messages_to_str(response)
+
+        self.assertEqual(_create_subscription_mocked.call_count, lines_count - 1)
         self.assertIn(CSVImportMessages.FILE_IMPORTED_SUCCESSFULLY.value, messages)
         self.assertEqual(CareRecipient.objects.count(), lines_count - 1)
 
     def test_admin_upload_csv_file_with_broken_row(self):
         csv_file = self._upload_test_data("patients_invalid_row_test_data.csv")
-        response = self._get_upload_file_response(csv_file)
-        csv_file.seek(0)
-        lines_count = len(csv_file.readlines())
-        messages = self._convert_messages_to_str(response)
+        with mock.patch.object(
+            CareRecipientForm,
+            CareRecipientForm._create_subscription.__name__,
+            MagicMock(side_effect=uuid4),
+        ) as _create_subscription_mocked:
+            response = self._get_upload_file_response(csv_file)
+            csv_file.seek(0)
+            lines_count = len(csv_file.readlines())
+            messages = self._convert_messages_to_str(response)
         self.assertIn(CSVImportMessages.FILE_IMPORTED_SUCCESSFULLY.value, messages)
         self.assertEqual(
             CareRecipient.objects.count(), lines_count - 2
