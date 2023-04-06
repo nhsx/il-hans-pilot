@@ -1,8 +1,10 @@
 import csv
 from io import TextIOWrapper
+from typing import List, Tuple, TypedDict
+from uuid import UUID
 
-from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
+from django.db import IntegrityError
 from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.urls import path
@@ -10,6 +12,12 @@ from django.utils.html import format_html
 
 from .configuration import SETTINGS
 from .enums import CSVImportMessages
+from typing import Iterable
+
+from django.contrib import admin, messages
+
+from internal_integrations.management_api.client import ManagementAPIClient
+from internal_integrations.management_api.exceptions import ManagementAPIClientError
 from .forms import CareProviderLocationForm, CareRecipientForm, RegisteredManagerForm
 from .models import CareProviderLocation, CareRecipient, RegisteredManager
 
@@ -33,17 +41,61 @@ class CareRecipientAdmin(admin.ModelAdmin):
         "provider_reference_id",
     )
     list_filter = ("care_provider_location_id",)
+    list_display = [
+        "provider_reference_id",
+        "care_provider_location_name",
+        "updated_at",
+        "updated_by",
+    ]
     form = CareRecipientForm
+
+    def care_provider_location_name(self, obj):
+        return obj.care_provider_location.name
 
     def save_model(self, request, obj, form, change):
         obj = set_obj_created_updated(request, obj, form)
         super().save_model(request, obj, form, change)
 
-    def get_exclude(self, request, obj=None):
-        exclude = self.exclude
-        if obj and obj.nhs_number_hash:
-            exclude = ("nhs_number",)
-        return exclude
+    def delete_queryset(self, request, queryset: Iterable[CareRecipient]):
+        for care_recipient in queryset:
+            try:
+                ManagementAPIClient().delete_subscription(
+                    care_recipient.subscription_id
+                )
+                care_recipient.delete()
+                self.message_user(
+                    request,
+                    f"{care_recipient} was deleted successfully",
+                    level=messages.INFO,
+                )
+            except ManagementAPIClientError as ex:
+                self.message_user(
+                    request,
+                    f"Could not delete {care_recipient}: {str(ex)}",
+                    level=messages.ERROR,
+                )
+
+    def delete_model(self, request, obj):
+        return self.delete_queryset(request, [obj])
+
+    def message_user(
+        self, request, message, level=messages.INFO, extra_tags="", fail_silently=False
+    ):
+        """
+        Django Admin's adds success message by default, which will be confusing
+        if only a subset of the objects were deleted successfully. We intercept these default messages
+        and take control of messages ourselves.
+        """
+        if message.startswith("Successfully deleted"):
+            return None
+
+        if message.startswith("The") and message.endswith("was deleted successfully."):
+            return None
+
+        super().message_user(request, message, level, extra_tags, fail_silently)
+
+    def has_change_permission(self, *args, **kwargs):
+        return False
 
 
 @admin.register(RegisteredManager)
@@ -58,92 +110,85 @@ class RegisteredManagerAdmin(admin.ModelAdmin):
 @admin.register(CareProviderLocation)
 class CareProviderLocationAdmin(admin.ModelAdmin):
     form = CareProviderLocationForm
-
-    def _is_csv_in_request_files(self, request) -> bool:
-        return "csvfile" in request.FILES
-
-    def _is_csv_line_count_valid(self, csv_data_list) -> bool:
-        return len(csv_data_list) <= SETTINGS.CSV_IMPORT_MAX_LINES
-
-    def _is_csv_column_set_valid(self, csv_data_list) -> bool:
-        required_columns = ["NHS_NUMBER", "DOB", "FAMILY_NAME", "GIVEN_NAME", "PROVIDER_REFERENCE"]
-        for column in required_columns:
-            if column not in csv_data_list[0]:
-                return False
-        return True
-
-    def _create_bulk_care_recipients(self, csv_data_list, careproviderlocation_id, user_id) -> int:
-        care_recipient_created_count = 0
-        care_provider_location = CareProviderLocation.objects.get(pk=careproviderlocation_id)
-        for care_recipient_dict in csv_data_list:
-            if not CareRecipient.objects.filter(
-                provider_reference_id=care_recipient_dict["PROVIDER_REFERENCE"]
-            ).exists():
-                care_recipient = CareRecipient(
-                    care_provider_location=care_provider_location,
-                    nhs_number=care_recipient_dict["NHS_NUMBER"],
-                    provider_reference_id=care_recipient_dict["PROVIDER_REFERENCE"],
-                    created_by_id=user_id,
-                )
-                try:
-                    care_recipient.full_clean()
-                    care_recipient.save()
-                except ValidationError:
-                    pass  # add some logging here
-
-                if care_recipient.pk:
-                    care_recipient_created_count += 1
-        return care_recipient_created_count
+    list_display = (
+        "name",
+        "bulk_import_button",
+    )
 
     def get_urls(self):
         urls = super().get_urls()
         my_urls = [
             path(
-                "import_care_recipients/<careproviderlocation_id>",
+                "import_care_recipients/<uuid:care_provider_location_id>",
                 self.admin_site.admin_view(self.import_care_recipients),
                 name="import_care_recipients",
             ),
         ]
         return my_urls + urls
 
-    def import_care_recipients(self, request, careproviderlocation_id):
+    def import_care_recipients(self, request, care_provider_location_id: UUID):
         context = dict(
             self.admin_site.each_context(request),
         )
         if request.method == "POST":
-
             if not self._is_csv_in_request_files(request):
-                messages.error(request, message=f"{CSVImportMessages.INVALID_OR_EMPTY_FILE}")
+                messages.error(
+                    request, message=f"{CSVImportMessages.INVALID_OR_EMPTY_FILE}"
+                )
                 return redirect("..")
 
-            csv_file = TextIOWrapper(request.FILES["csvfile"].file, encoding="utf-8 ", errors="replace")
+            csv_file = TextIOWrapper(
+                request.FILES["csvfile"].file, encoding="utf-8", errors="replace"
+            )
             try:
-                reader = csv.DictReader(csv_file, delimiter=",")
                 # because it's not possible to rewind the reader, it's better to store its contents in list for
                 # multiple iterations
                 csv_data = []
-                for line in reader:
-                    csv_data.append(line)
+                for row in csv.DictReader(csv_file, delimiter=","):
+                    csv_data.append(
+                        _CareRecipientRecord(**{k.lower(): v for k, v in row.items()})
+                    )
             except csv.Error:
-                messages.error(request, message=f"{CSVImportMessages.FILE_CORRUPTED_OR_BINARY}")
+                messages.error(
+                    request, message=f"{CSVImportMessages.FILE_CORRUPTED_OR_BINARY}"
+                )
                 return redirect("..")
 
             if not self._is_csv_column_set_valid(csv_data):
-                messages.error(request, message=f"{CSVImportMessages.INVALID_COLUMN_SET}")
+                messages.error(
+                    request, message=f"{CSVImportMessages.INVALID_COLUMN_SET}"
+                )
                 return redirect("..")
 
             if not self._is_csv_line_count_valid(csv_data):
                 messages.error(
-                    request, message=f"{CSVImportMessages.LINE_COUNT_EXCEEDED}: {SETTINGS.CSV_IMPORT_MAX_LINES}"
+                    request,
+                    message=f"{CSVImportMessages.LINE_COUNT_EXCEEDED}: {SETTINGS.CSV_IMPORT_MAX_LINES}",
                 )
                 return redirect("..")
 
-            care_recipient_created_count = self._create_bulk_care_recipients(
-                csv_data_list=csv_data, careproviderlocation_id=careproviderlocation_id, user_id=request.user.id
+            created_care_recipients, errors = self._bulk_create_care_recipients(
+                csv_data=csv_data,
+                care_provider_location_id=care_provider_location_id,
             )
             messages.info(
-                request, message=f"{CSVImportMessages.FILE_IMPORTED_SUCCESSFULLY}: {care_recipient_created_count}"
+                request,
+                message=f"{CSVImportMessages.FILE_IMPORTED_SUCCESSFULLY}: {len(created_care_recipients)}",
             )
+            for provider_reference_id, error in errors:
+                try:
+                    raise error
+                except IntegrityError:
+                    messages.warning(
+                        request,
+                        message=f"{provider_reference_id}: already exists",
+                    )
+                except ValidationError as exc:
+                    messages.error(
+                        request,
+                        message=f"{provider_reference_id}: {exc.message}",
+                    )
+
             return redirect("..")
 
         return TemplateResponse(request, "csv_form.html", context)
@@ -155,12 +200,51 @@ class CareProviderLocationAdmin(admin.ModelAdmin):
             f"Import Care Recipients to {obj.name}",
         )
 
+    bulk_import_button.short_description = "Import Care Recipients"  # type: ignore
+
     def save_model(self, request, obj, form, change):
         obj = set_obj_created_updated(request, obj, form)
         super().save_model(request, obj, form, change)
 
-    bulk_import_button.short_description = "Import Care Recipients"  # type: ignore
-    list_display = (
-        "name",
-        "bulk_import_button",
-    )
+    def _is_csv_in_request_files(self, request) -> bool:
+        return "csvfile" in request.FILES
+
+    def _is_csv_line_count_valid(self, csv_data_list) -> bool:
+        return len(csv_data_list) <= SETTINGS.CSV_IMPORT_MAX_LINES
+
+    def _is_csv_column_set_valid(self, csv_data_list) -> bool:
+        return set(_CareRecipientRecord.__annotations__) == set(csv_data_list[0])
+
+    def _bulk_create_care_recipients(
+        self, csv_data: List["_CareRecipientRecord"], care_provider_location_id: UUID
+    ) -> (List[CareRecipient], Tuple[str, Exception]):
+        created_care_recipients, errors = [], []
+        for care_recipient_record in csv_data:
+            form = CareRecipientForm(
+                data=dict(
+                    care_provider_location=care_provider_location_id,
+                    **care_recipient_record,
+                )
+            )
+            if form.errors:
+                errors.extend(
+                    (care_recipient_record["provider_reference_id"], error)
+                    for error in form.non_field_errors().data
+                )
+                continue
+
+            try:
+                care_recipient = form.save()
+                created_care_recipients.append(care_recipient)
+            except IntegrityError as exc:
+                errors.append((care_recipient_record["provider_reference_id"], exc))
+
+        return created_care_recipients, errors
+
+
+class _CareRecipientRecord(TypedDict):
+    provider_reference_id: str
+    given_name: str
+    family_name: str
+    nhs_number: str
+    birth_date: str

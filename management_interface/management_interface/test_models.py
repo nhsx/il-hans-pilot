@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 
@@ -23,7 +25,9 @@ def assert_accepts_email(obj, email):
 
 def create_registered_manager():
     return RegisteredManager(
-        given_name="Jehosephat", family_name="McGibbons", cqc_registered_manager_id="My CQC Registered Manager ID"
+        given_name="Jehosephat",
+        family_name="McGibbons",
+        cqc_registered_manager_id="My CQC Registered Manager ID",
     )
 
 
@@ -63,7 +67,9 @@ class RegisteredManagerTests(TestCase):
 
     def test_str_method(self):
         manager = create_registered_manager()
-        self.assertEqual(str(manager), "McGibbons, Jehosephat (My CQC Registered Manager ID)")
+        self.assertEqual(
+            str(manager), "McGibbons, Jehosephat (My CQC Registered Manager ID)"
+        )
 
 
 class CareProviderLocationTests(TestCase):
@@ -107,7 +113,9 @@ class CareProviderLocationTests(TestCase):
 class CareRecipientTests(TestCase):
     def create_registered_manager_object(self):
         return RegisteredManager.objects.create(
-            given_name="Jehosephat", family_name="McGibbons", cqc_registered_manager_id="My CQC Registered Manager ID"
+            given_name="Jehosephat",
+            family_name="McGibbons",
+            cqc_registered_manager_id="My CQC Registered Manager ID",
         )
 
     def create_care_provider_location_object(self, manager):
@@ -118,21 +126,21 @@ class CareRecipientTests(TestCase):
             cqc_location_id="My CQC Location ID",
         )
 
-    def test_stores_nhs_number_as_hash(self):
-        jeff = CareRecipient(nhs_number="password")
-        jeff.clean()
-        self.assertEquals(jeff.nhs_number_hash, "c0067d4af4e87f00dbac63b6156828237059172d1bbeac67427345d6a9fda484")
-
-    def test_nhs_number_is_write_only(self):
-        jeff = CareRecipient()
-        jeff.nhs_number = "super-sekrit"
-        jeff.clean()
-        self.assertEquals(jeff.nhs_number, None)
-
     def test_nhs_number_hash_gets_saved(self):
-        manager = self.create_registered_manager_object()
-        location = self.create_care_provider_location_object(manager=manager)
-        jeff = location.carerecipient_set.create(subscription_id="42", provider_reference_id="foobar")
+        manager = RegisteredManager.objects.create(
+            given_name="Jehosephat",
+            family_name="McGibbons",
+            cqc_registered_manager_id="My CQC RegsiteredManagerID",
+        )
+        location = manager.careproviderlocation_set.create(
+            name="My Location Name",
+            email="nosuchaddress@nhs.net",
+            ods_code="My Ods Code",
+            cqc_location_id="My CQC Location ID",
+        )
+        jeff = location.carerecipient_set.create(
+            subscription_id=uuid4(), provider_reference_id="foobar"
+        )
         jeff.nhs_number = "password"
         jeff.save()
 
@@ -142,7 +150,11 @@ class CareRecipientTests(TestCase):
     def test_str_method(self):
         manager = self.create_registered_manager_object()
         location = self.create_care_provider_location_object(manager=manager)
-        jeff = CareRecipient(care_provider_location=location, subscription_id="42", provider_reference_id="foobar")
+        jeff = CareRecipient(
+            care_provider_location=location,
+            subscription_id=uuid4(),
+            provider_reference_id="foobar",
+        )
         jeff.nhs_number = "password"
         jeff.save()
         self.assertEqual(str(jeff), '"foobar" (My Location Name)')
