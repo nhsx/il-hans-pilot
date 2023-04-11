@@ -4,7 +4,6 @@ phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
-      - printenv
       - aws --version
       - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $IMAGE_REPO_URL
       - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
@@ -22,6 +21,6 @@ phases:
       - docker push $IMAGE_REPO_URL:$IMAGE_TAG
       - docker push $IMAGE_REPO_URL:latest
       - echo Writing image definitions file...
-      - printf '[{"name":"staging_management_interface","imageUri":"%s"}]' $IMAGE_REPO_URL:$IMAGE_TAG > imagedefinitions.json
+      - printf '[{"name":"il-hans-management-interface","imageUri":"%s"}]' $IMAGE_REPO_URL:$IMAGE_TAG > imagedefinitions.json
 artifacts:
     files: imagedefinitions.json
