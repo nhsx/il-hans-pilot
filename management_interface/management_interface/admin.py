@@ -1,25 +1,30 @@
 import csv
 from io import TextIOWrapper
-from typing import List, Tuple, TypedDict
+from typing import Iterable, List, Tuple, TypedDict
 from uuid import UUID
 
+from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.urls import path
 from django.utils.html import format_html
+from internal_integrations.management_api.client import ManagementAPIClient
+from internal_integrations.management_api.exceptions import ManagementAPIClientError
 
 from .configuration import SETTINGS
 from .enums import CSVImportMessages
-from typing import Iterable
-
-from django.contrib import admin, messages
-
-from internal_integrations.management_api.client import ManagementAPIClient
-from internal_integrations.management_api.exceptions import ManagementAPIClientError
 from .forms import CareProviderLocationForm, CareRecipientForm, RegisteredManagerForm
 from .models import CareProviderLocation, CareRecipient, RegisteredManager
+
+
+class _CareRecipientRecord(TypedDict):
+    provider_reference_id: str
+    given_name: str
+    family_name: str
+    nhs_number: str
+    birth_date: str
 
 
 def set_obj_created_updated(request, obj, form):
@@ -59,9 +64,7 @@ class CareRecipientAdmin(admin.ModelAdmin):
     def delete_queryset(self, request, queryset: Iterable[CareRecipient]):
         for care_recipient in queryset:
             try:
-                ManagementAPIClient().delete_subscription(
-                    care_recipient.subscription_id
-                )
+                ManagementAPIClient().delete_subscription(care_recipient.subscription_id)
                 care_recipient.delete()
                 self.message_user(
                     request,
@@ -78,9 +81,7 @@ class CareRecipientAdmin(admin.ModelAdmin):
     def delete_model(self, request, obj):
         return self.delete_queryset(request, [obj])
 
-    def message_user(
-        self, request, message, level=messages.INFO, extra_tags="", fail_silently=False
-    ):
+    def message_user(self, request, message, level=messages.INFO, extra_tags="", fail_silently=False):
         """
         Django Admin's adds success message by default, which will be confusing
         if only a subset of the objects were deleted successfully. We intercept these default messages
@@ -132,32 +133,22 @@ class CareProviderLocationAdmin(admin.ModelAdmin):
         )
         if request.method == "POST":
             if not self._is_csv_in_request_files(request):
-                messages.error(
-                    request, message=f"{CSVImportMessages.INVALID_OR_EMPTY_FILE}"
-                )
+                messages.error(request, message=f"{CSVImportMessages.INVALID_OR_EMPTY_FILE}")
                 return redirect("..")
 
-            csv_file = TextIOWrapper(
-                request.FILES["csvfile"].file, encoding="utf-8", errors="replace"
-            )
+            csv_file = TextIOWrapper(request.FILES["csvfile"].file, encoding="utf-8", errors="replace")
             try:
                 # because it's not possible to rewind the reader, it's better to store its contents in list for
                 # multiple iterations
                 csv_data = []
                 for row in csv.DictReader(csv_file, delimiter=","):
-                    csv_data.append(
-                        _CareRecipientRecord(**{k.lower(): v for k, v in row.items()})
-                    )
+                    csv_data.append(_CareRecipientRecord(**{k.lower(): v for k, v in row.items()}))  # type: ignore
             except csv.Error:
-                messages.error(
-                    request, message=f"{CSVImportMessages.FILE_CORRUPTED_OR_BINARY}"
-                )
+                messages.error(request, message=f"{CSVImportMessages.FILE_CORRUPTED_OR_BINARY}")
                 return redirect("..")
 
             if not self._is_csv_column_set_valid(csv_data):
-                messages.error(
-                    request, message=f"{CSVImportMessages.INVALID_COLUMN_SET}"
-                )
+                messages.error(request, message=f"{CSVImportMessages.INVALID_COLUMN_SET}")
                 return redirect("..")
 
             if not self._is_csv_line_count_valid(csv_data):
@@ -216,10 +207,11 @@ class CareProviderLocationAdmin(admin.ModelAdmin):
         return set(_CareRecipientRecord.__annotations__) == set(csv_data_list[0])
 
     def _bulk_create_care_recipients(
-        self, csv_data: List["_CareRecipientRecord"], care_provider_location_id: UUID
-    ) -> (List[CareRecipient], Tuple[str, Exception]):
-        created_care_recipients, errors = [], []
-        for care_recipient_record in csv_data:
+        self, csv_data: List[_CareRecipientRecord], care_provider_location_id: UUID
+    ) -> (List[CareRecipient], Tuple[str, Exception]):  # type: ignore
+        created_care_recipients = []
+        errors: List = []
+        for counter, care_recipient_record in enumerate(csv_data):
             form = CareRecipientForm(
                 data=dict(
                     care_provider_location=care_provider_location_id,
@@ -227,24 +219,25 @@ class CareProviderLocationAdmin(admin.ModelAdmin):
                 )
             )
             if form.errors:
-                errors.extend(
-                    (care_recipient_record["provider_reference_id"], error)
-                    for error in form.non_field_errors().data
-                )
+                if form.non_field_errors().data:
+                    errors.extend(
+                        (f"{care_recipient_record['provider_reference_id']} (line {counter})", error)
+                        for error in form.non_field_errors().data
+                    )
+                for field in form.errors:
+                    error_message = f"Field: {field}, error(s): {' '.join(form.errors[field])}"
+                    errors.append(
+                        (
+                            f"{care_recipient_record['provider_reference_id']} (line {counter})",
+                            ValidationError(error_message),
+                        )
+                    )
                 continue
 
             try:
                 care_recipient = form.save()
                 created_care_recipients.append(care_recipient)
             except IntegrityError as exc:
-                errors.append((care_recipient_record["provider_reference_id"], exc))
+                errors.append((f"{care_recipient_record['provider_reference_id']} (line {counter})", exc))
 
         return created_care_recipients, errors
-
-
-class _CareRecipientRecord(TypedDict):
-    provider_reference_id: str
-    given_name: str
-    family_name: str
-    nhs_number: str
-    birth_date: str
