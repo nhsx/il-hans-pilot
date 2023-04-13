@@ -3,7 +3,7 @@ services:
   web:
     build: .
     ports:
-      - "8000:8000"
+      - "80:80"
     # probably a hack: createsuperuser would fail if issued on existing DB (as the user already exists)
     # so to allow build command to finish and run the container, we force to ignore the error
     command: /app/start.sh
@@ -14,6 +14,11 @@ services:
       - "DJANGO_SUPERUSER_USERNAME=${DJANGO_SUPERUSER_USERNAME:-admin}"
       - "DJANGO_SUPERUSER_EMAIL=${DJANGO_SUPERUSER_EMAIL:-hans_admin@thepsc.co.uk}"
       - "HANS_MI_DEBUG=${HANS_MI_DEBUG:-TRUE}"
+      - "GUNICORN_LOGLEVEL=${GUNICORN_LOGLEVEL}"
+      - "GUNICORN_WORKERS=${GUNICORN_WORKERS}"
+      - "GUNICORN_ACCESSLOG=${GUNICORN_ACCESSLOG}"
+      - "GUNICORN_ERRORLOG=${GUNICORN_ERRORLOG}"
+      - "MANAGEMENT_API_BASE_URL=${MANAGEMENT_API_BASE_URL}"
     depends_on:
       - db
   db:
