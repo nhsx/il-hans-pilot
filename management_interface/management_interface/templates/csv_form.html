@@ -7,8 +7,8 @@
         <label for="csvfile">Select a CSV file:</label>
         <input type="file" id="csvfile" name="csvfile" />
         <br /><br />
-        <button class="uploadBtn" id="submit">Upload CSV file</button>
-        <button class="cancelBtn" type="button" onclick="history.back();">Cancel upload</button>
+        <button class="uploadBtn" id="submit" onclick="document.getElementById('cancel').disabled = true">Upload CSV file</button>
+        <button class="cancelBtn" type="button" id="cancel" onclick="history.back();">Cancel upload</button>
     </form>
     </div>
     <br />
