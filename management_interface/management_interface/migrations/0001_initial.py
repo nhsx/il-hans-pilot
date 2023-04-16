@@ -10,7 +10,6 @@ import management_interface.models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -32,9 +31,19 @@ class Migration(migrations.Migration):
                         unique=True,
                     ),
                 ),
-                ("created_at", models.DateTimeField(default=django.utils.timezone.now, editable=False)),
+                (
+                    "created_at",
+                    models.DateTimeField(
+                        default=django.utils.timezone.now, editable=False
+                    ),
+                ),
                 ("updated_at", models.DateTimeField(auto_now=True)),
-                ("name", models.CharField(help_text="Your Care Provider Branch Name", max_length=256)),
+                (
+                    "name",
+                    models.CharField(
+                        help_text="Your Care Provider Branch Name", max_length=256
+                    ),
+                ),
                 (
                     "email",
                     models.EmailField(
@@ -44,8 +53,16 @@ class Migration(migrations.Migration):
                         validators=[management_interface.models.SecureEmailValidator()],
                     ),
                 ),
-                ("ods_code", models.CharField(help_text="XXXABCD", max_length=16, unique=True)),
-                ("cqc_location_id", models.CharField(help_text="1-110XXXXXXXX", max_length=128, unique=True)),
+                (
+                    "ods_code",
+                    models.CharField(help_text="XXXABCD", max_length=16, unique=True),
+                ),
+                (
+                    "cqc_location_id",
+                    models.CharField(
+                        help_text="1-110XXXXXXXX", max_length=128, unique=True
+                    ),
+                ),
                 (
                     "created_by",
                     models.ForeignKey(
@@ -75,10 +92,23 @@ class Migration(migrations.Migration):
                         unique=True,
                     ),
                 ),
-                ("created_at", models.DateTimeField(default=django.utils.timezone.now, editable=False)),
+                (
+                    "created_at",
+                    models.DateTimeField(
+                        default=django.utils.timezone.now, editable=False
+                    ),
+                ),
                 ("updated_at", models.DateTimeField(auto_now=True)),
-                ("given_name", models.CharField(db_index=True, help_text="Aislinn", max_length=256)),
-                ("family_name", models.CharField(db_index=True, help_text="Mullen", max_length=256)),
+                (
+                    "given_name",
+                    models.CharField(
+                        db_index=True, help_text="Aislinn", max_length=256
+                    ),
+                ),
+                (
+                    "family_name",
+                    models.CharField(db_index=True, help_text="Mullen", max_length=256),
+                ),
                 (
                     "email",
                     models.EmailField(
@@ -89,7 +119,10 @@ class Migration(migrations.Migration):
                         validators=[management_interface.models.SecureEmailValidator()],
                     ),
                 ),
-                ("cqc_registered_manager_id", models.CharField(help_text="1-XXXXXXXX", max_length=128)),
+                (
+                    "cqc_registered_manager_id",
+                    models.CharField(help_text="1-XXXXXXXX", max_length=128),
+                ),
                 (
                     "created_by",
                     models.ForeignKey(
@@ -129,22 +162,42 @@ class Migration(migrations.Migration):
                         unique=True,
                     ),
                 ),
-                ("created_at", models.DateTimeField(default=django.utils.timezone.now, editable=False)),
+                (
+                    "created_at",
+                    models.DateTimeField(
+                        default=django.utils.timezone.now, editable=False
+                    ),
+                ),
                 ("updated_at", models.DateTimeField(auto_now=True)),
-                ("nhs_number_hash", models.CharField(db_index=True, editable=False, max_length=128)),
+                (
+                    "nhs_number_hash",
+                    models.CharField(db_index=True, editable=False, max_length=128),
+                ),
                 (
                     "subscription_id",
-                    models.CharField(db_index=True, default=uuid.uuid4, editable=False, max_length=64, unique=True),
+                    models.CharField(
+                        db_index=True,
+                        default=uuid.uuid4,
+                        editable=False,
+                        max_length=64,
+                        unique=True,
+                    ),
                 ),
                 (
                     "provider_reference_id",
-                    models.CharField(db_index=True, help_text="XXX12345678", max_length=128, unique=True),
+                    models.CharField(
+                        db_index=True,
+                        help_text="XXX12345678",
+                        max_length=128,
+                        unique=True,
+                    ),
                 ),
                 ("nhs_number", models.CharField(blank=True, max_length=32, null=True)),
                 (
                     "care_provider_location",
                     models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE, to="management_interface.careproviderlocation"
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="management_interface.careproviderlocation",
                     ),
                 ),
                 (
@@ -176,7 +229,8 @@ class Migration(migrations.Migration):
             model_name="careproviderlocation",
             name="registered_manager",
             field=models.ForeignKey(
-                on_delete=django.db.models.deletion.CASCADE, to="management_interface.registeredmanager"
+                on_delete=django.db.models.deletion.CASCADE,
+                to="management_interface.registeredmanager",
             ),
         ),
         migrations.AddField(
