@@ -9,4 +9,6 @@ class CSVImportMessages(str, Enum):
         "NHS_NUMBER, BIRTH_DATE, FAMILY_NAME, GIVEN_NAME, PROVIDER_REFERENCE_ID"
     )
     LINE_COUNT_EXCEEDED = "The CSV file line count exceeds maximum number of lines"
-    FILE_IMPORTED_SUCCESSFULLY = "Your CSV file has been imported. New Care Recipients created"
+    FILE_IMPORTED_SUCCESSFULLY = (
+        "Your CSV file has been imported. New Care Recipients created"
+    )
