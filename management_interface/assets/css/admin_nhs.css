@@ -1,0 +1,87 @@
+/* VARIABLE DEFINITIONS */
+:root {
+    --primary: #005EB8;
+    --secondary: #fff;
+    --accent: #000;
+    --primary-fg: #fff;
+  
+    --body-fg: #333;
+    --body-bg: #fff;
+    --body-quiet-color: #666;
+    --body-loud-color: #000;
+  
+    --header-color: #fff;
+    --header-branding-color: var(--primary);
+    --header-bg: var(--secondary);
+    --header-link-color: var(--secondary);
+  
+    --breadcrumbs-fg: #c4dce8;
+    --breadcrumbs-link-fg: var(--body-bg);
+    --breadcrumbs-bg: var(--primary);
+  
+    --link-fg: #0072CE;
+    --link-hover-color: #036;
+    --link-selected-fg: #5b80b2;
+  
+    --hairline-color: #e8e8e8;
+    --border-color: #ccc;
+  
+    --error-fg: #ba2121;
+  
+    --message-success-bg: #dfd;
+    --message-warning-bg: #ffc;
+    --message-error-bg: #ffefef;
+  
+    --darkened-bg: #f8f8f8; /* A bit darker than --body-bg */
+    --selected-bg: #e4e4e4; /* E.g. selected table cells */
+    --selected-row: #ffc;
+  
+    --button-fg: #fff;
+    --button-bg: var(--primary);
+    --button-hover-bg: #609ab6;
+    --default-button-bg: var(--secondary);
+    --default-button-hover-bg: #205067;
+    --close-button-bg: #888; /* Previously #bbb, contrast 1.92 */
+    --close-button-hover-bg: #747474;
+    --delete-button-bg: #ba2121;
+    --delete-button-hover-bg: #a41515;
+  
+    --object-tools-fg: var(--button-fg);
+    --object-tools-bg: var(--close-button-bg);
+    --object-tools-hover-bg: var(--close-button-hover-bg);
+  }
+
+body {
+  font-family: Arial, sans-serif;
+}
+
+.nhsuk-logo__background {
+  fill: var(--primary);
+}
+
+.nhsuk-logo__text {
+  fill: var(--secondary);
+}
+
+.nhsuk-header__service-name {
+  color: var(--primary);
+  font-weight: bold;
+  font-size: 16px;
+  padding-left: 16px;
+}
+
+#header a:link {
+  color: #000
+}
+
+#header a:visited {
+  color: #005EB8
+}
+
+#logout-form button {
+  color: #005EB8
+}
+
+#user-tools {
+  color: #000
+}
