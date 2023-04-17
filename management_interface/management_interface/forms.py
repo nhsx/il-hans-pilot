@@ -56,7 +56,7 @@ class CareRecipientForm(forms.ModelForm):
         )
         if already_existing_care_recipient:
             raise ValidationError(
-                f"This care recipient already exists in the database with provider reference ID "
+                f"Care recipient with this NHS number already exists in the database (with provider reference ID "
                 f"{already_existing_care_recipient[0].provider_reference_id}"
             )
 
