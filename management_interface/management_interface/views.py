@@ -22,7 +22,6 @@ def failure_response(status, code, diagnostics):
 @csrf_exempt
 def care_provider_search(request):
     if request.method == "POST":
-
         try:
             nhs_number_hash = request.POST["_careRecipientPseudoId"]
         except KeyError:
@@ -33,7 +32,9 @@ def care_provider_search(request):
             )
 
         try:
-            care_provider = CareProviderLocation.objects.get(carerecipient__nhs_number_hash=nhs_number_hash)
+            care_provider = CareProviderLocation.objects.get(
+                carerecipient__nhs_number_hash=nhs_number_hash
+            )
         except CareProviderLocation.DoesNotExist:
             return failure_response(
                 status=HTTPStatus.NOT_FOUND,
@@ -41,8 +42,12 @@ def care_provider_search(request):
                 diagnostics="No subscription was found on the system for the given pseudonymous identifier",
             )
 
-        fhir_contact_point = ContactPoint(system="email", value=care_provider.email, use="work")
-        fhir_organization = Organization(name=care_provider.name, telecom=[fhir_contact_point])
+        fhir_contact_point = ContactPoint(
+            system="email", value=care_provider.email, use="work"
+        )
+        fhir_organization = Organization(
+            name=care_provider.name, telecom=[fhir_contact_point]
+        )
         return JsonResponse(fhir_organization.dict())
 
     # if not allowed method was used on this endpoint

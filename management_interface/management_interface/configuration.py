@@ -10,11 +10,14 @@ class Settings:
     POSTGRES_HOST: str = os.environ.get("HANS_MI_PSQL_HOST", "db")
     POSTGRES_PORT: int = int(os.environ.get("HANS_MI_PSQL_PORT", 5432))
     SECRET_KEY: str = os.environ.get(
-        "HANS_MI_SECRET_KEY", "django-insecure-ys038snwqt5(l_7m%p6hh8ke20+w!8fbi+@covbk)^xl1@8r%-"
+        "HANS_MI_SECRET_KEY",
+        "django-insecure-ys038snwqt5(l_7m%p6hh8ke20+w!8fbi+@covbk)^xl1@8r%-",
     )
     APP_NAME: str = os.environ.get("APP_NAME", "management_interface")
     DEBUG: bool = bool(os.environ.get("HANS_MI_DEBUG", False))
-    CSRF_TRUSTED_ORIGINS: str = os.environ.get("CSRF_TRUSTED_ORIGINS", "http://localhost")
+    CSRF_TRUSTED_ORIGINS: str = os.environ.get(
+        "CSRF_TRUSTED_ORIGINS", "http://localhost"
+    )
     CSV_IMPORT_MAX_LINES: int = 1000
 
 

@@ -50,12 +50,21 @@ class CareRecipientForm(forms.ModelForm):
         self.cleaned_data["nhs_number"] = "".join(
             self.cleaned_data["nhs_number"].split()
         )
+        self.cleaned_data["nhs_number_hash"] = self._generate_nhs_number_hash()
+        already_existing_care_recipient = CareRecipient.objects.filter(
+            nhs_number_hash=self.cleaned_data["nhs_number_hash"]
+        )
+        if already_existing_care_recipient:
+            raise ValidationError(
+                f"Care recipient with this NHS number already exists in the database (with provider reference ID "
+                f"{already_existing_care_recipient[0].provider_reference_id})"
+            )
+
         self.cleaned_data["given_name"] = [
             name.strip() for name in self.cleaned_data["given_name"].split()
         ]
         self.cleaned_data["subscription_id"] = self._create_subscription()
-        self.cleaned_data["nhs_number_hash"] = self._generate_nhs_number_hash()
-        return self.cleaned_data
+        return super().clean()
 
     def save(self, commit: bool = True):
         self.instance.subscription_id = self.cleaned_data["subscription_id"]

@@ -109,7 +109,7 @@ class CareRecipient(BaseModel):
         "CareProviderLocation", on_delete=models.CASCADE
     )
     nhs_number_hash = models.CharField(
-        null=False, max_length=128, db_index=True, editable=False
+        null=False, max_length=128, db_index=True, editable=False, unique=True
     )
     subscription_id = models.UUIDField(
         null=False, max_length=64, db_index=True, unique=True, editable=False

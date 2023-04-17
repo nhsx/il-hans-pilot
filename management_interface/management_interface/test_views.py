@@ -39,12 +39,16 @@ class CareProviderLocationTests(TestCase):
 
     def test_search_get_method_not_allowed(self):
         url = reverse("care_provider_search")
-        response = self.client.get(url, {"_careRecipientPseudoId": self.care_recipient.nhs_number_hash})
+        response = self.client.get(
+            url, {"_careRecipientPseudoId": self.care_recipient.nhs_number_hash}
+        )
         self.assertFailure(response, HTTPStatus.METHOD_NOT_ALLOWED, "not-allowed")
 
     def test_successful_search(self):
         url = reverse("care_provider_search")
-        response = self.client.post(url, {"_careRecipientPseudoId": self.care_recipient.nhs_number_hash})
+        response = self.client.post(
+            url, {"_careRecipientPseudoId": self.care_recipient.nhs_number_hash}
+        )
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertEqual(response.json()["name"], self.location.name)
 
@@ -72,9 +76,13 @@ class AdminCareProviderLocationTests(TestCase):
         return response
 
     def _upload_test_data(self, test_filename):
-        file_path = os.path.join(os.path.dirname(__file__), f"test_files/{test_filename}")
+        file_path = os.path.join(
+            os.path.dirname(__file__), f"test_files/{test_filename}"
+        )
         with open(file_path, "rb") as file:
-            csv_file = SimpleUploadedFile("patients_test_data.csv", file.read(), content_type="text/csv")
+            csv_file = SimpleUploadedFile(
+                "patients_test_data.csv", file.read(), content_type="text/csv"
+            )
         return csv_file
 
     def setUp(self) -> None:
@@ -152,4 +160,6 @@ class AdminCareProviderLocationTests(TestCase):
             messages = self._convert_messages_to_str(response)
         self.assertIn(CSVImportMessages.FILE_IMPORTED_SUCCESSFULLY.value, messages)
         self.assertIn("error(s)", messages)
-        self.assertEqual(_create_subscription_mocked.call_count, lines_count - 3)  # header + two invalid rows
+        self.assertEqual(
+            _create_subscription_mocked.call_count, lines_count - 3
+        )  # header + two invalid rows

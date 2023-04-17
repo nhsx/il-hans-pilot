@@ -20,7 +20,11 @@ from .views import care_provider_search
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("care-provider-location/_search/", care_provider_search, name="care_provider_search"),
+    path(
+        "care-provider-location/_search/",
+        care_provider_search,
+        name="care_provider_search",
+    ),
 ]
 
 admin.site.site_header = "Hospital Activity Notification Service Management Interface"
