@@ -57,7 +57,7 @@ class CareRecipientForm(forms.ModelForm):
         if already_existing_care_recipient:
             raise ValidationError(
                 f"Care recipient with this NHS number already exists in the database (with provider reference ID "
-                f"{already_existing_care_recipient[0].provider_reference_id}"
+                f"{already_existing_care_recipient[0].provider_reference_id})"
             )
 
         self.cleaned_data["given_name"] = [
