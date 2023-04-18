@@ -163,3 +163,54 @@ class AdminCareProviderLocationTests(TestCase):
         self.assertEqual(
             _create_subscription_mocked.call_count, lines_count - 3
         )  # header + two invalid rows
+
+
+class AdminCareRecipientTests(TestCase):
+    def setUp(self) -> None:
+        self.manager = RegisteredManager.objects.create(
+            given_name="Jehosephat",
+            family_name="McGibbons",
+            cqc_registered_manager_id="My CQC RegsiteredManagerID",
+        )
+        self.location = self.manager.careproviderlocation_set.create(
+            name="My Location Name",
+            email="nosuchaddress@nhs.net",
+            ods_code="My Ods Code",
+            cqc_location_id="My CQC Location ID",
+        )
+
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username="admin",
+            email="admin@example.com",
+            password="password",
+            is_staff=True,
+            is_superuser=True,
+        )
+        self.client.login(username="admin", password="password")
+
+    def test_change_view__does_not_display_fields_not_stored_in_database(
+        self,
+    ):
+        care_recipient = CareRecipient.objects.create(
+            care_provider_location=self.location,
+            nhs_number_hash="1234567",
+            subscription_id=uuid4(),
+            provider_reference_id="AX812938",
+        )
+        response = self.client.get(self._get_admin_change_view_url(care_recipient))
+        response_text_lower = response.content.decode("utf-8").lower()
+        assert response.status_code == 200
+        assert "given name" not in response_text_lower
+        assert "family name" not in response_text_lower
+        assert "nhs number" not in response_text_lower
+        assert "birth date" not in response_text_lower
+
+    @staticmethod
+    def _get_admin_change_view_url(obj: object) -> str:
+        return reverse(
+            "admin:{}_{}_change".format(
+                obj._meta.app_label, type(obj).__name__.lower()
+            ),
+            args=(obj.pk,),
+        )
