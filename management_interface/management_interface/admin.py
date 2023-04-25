@@ -54,6 +54,14 @@ class CareRecipientAdmin(admin.ModelAdmin):
     ]
     form = CareRecipientForm
 
+    def get_fields(self, request, obj=None):
+        fields = super().get_fields(request, obj=obj)
+        if obj is not None:
+            fields_to_hide = {"given_name", "family_name", "nhs_number", "birth_date"}
+            return [field for field in fields if field not in fields_to_hide]
+
+        return fields
+
     def care_provider_location_name(self, obj):
         return obj.care_provider_location.name
 
