@@ -10,7 +10,7 @@ class SecureEmailValidator(EmailValidator):
     message = "Enter an nhs.net email address"
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs, allowlist=["nhs.net", "mkuh.nhs.uk", "thepsc.co.uk"])
+        super().__init__(**kwargs, allowlist=["nhs.net"])
 
     def validate_domain_part(self, _):
         return False
