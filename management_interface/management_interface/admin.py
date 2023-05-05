@@ -6,8 +6,10 @@ from urllib.parse import quote
 
 from django.conf import settings
 from django.contrib import admin, messages
+from django.contrib.auth import logout
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
+from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.urls import path
@@ -44,7 +46,11 @@ def admin_login_redirect(request):
     return redirect("/saml/login")
 
 def admin_logout_redirect(request):
-    return redirect(f"{settings.COGNITO_CONFIG['ENDPOINT']}/logout?client_id={quote(settings.COGNITO_CONFIG['CLIENT_ID'])}&logout_uri={quote(request.build_absolute_uri('/admin/'))}")
+    logout(request)
+    return redirect(f"{settings.COGNITO_CONFIG['ENDPOINT']}/logout?client_id={quote(settings.COGNITO_CONFIG['CLIENT_ID'])}&logout_uri={quote(request.build_absolute_uri('/admin/logout/success/'))}")
+
+def admin_logout_success(request):
+    return HttpResponse("You are now logged out - to log back in <a href='/admin/'>click here</a>")
 
 @admin.register(CareRecipient)
 class CareRecipientAdmin(admin.ModelAdmin):

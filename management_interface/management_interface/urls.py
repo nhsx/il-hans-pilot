@@ -17,10 +17,11 @@ from django.contrib import admin
 from django.urls import path, include
 
 from .views import care_provider_search
-from .admin import admin_login_redirect, admin_logout_redirect
+from .admin import admin_login_redirect, admin_logout_redirect, admin_logout_success
 
 urlpatterns = [
     path("admin/login/", admin_login_redirect),
+    path("admin/logout/success/", admin_logout_success),
     path("admin/logout/", admin_logout_redirect),
     path("admin/", admin.site.urls),
     path(
