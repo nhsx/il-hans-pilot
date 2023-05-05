@@ -151,7 +151,7 @@ AUTHENTICATION_BACKENDS = [
     "django_cognito_saml.backends.SuperUserBackend",
 ]
 
-LOGIN_REDIRECT_URL = "/admin"
+LOGIN_REDIRECT_URL = "/admin/"
 
 COGNITO_CONFIG = {
     "ENDPOINT": SETTINGS.COGNITO_ENDPOINT,
