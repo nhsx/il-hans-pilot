@@ -2,7 +2,9 @@ import csv
 from io import TextIOWrapper
 from typing import Iterable, List, Tuple, TypedDict
 from uuid import UUID
+from urllib.parse import quote
 
+from django.conf import settings
 from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
@@ -38,6 +40,11 @@ def set_obj_created_updated(request, obj, form):
         obj.created_by = request.user
     return obj
 
+def admin_login_redirect():
+    return redirect("/saml/login")
+
+def admin_logout_redirect(request):
+    return redirect(f"{settings.COGNITO_ENDPOINT}/logout?client_id={quote(settings.COGNITO_CLIENT_ID)}&logout_uri={quote(request.build_absolute_uri('/admin/'))}")
 
 @admin.register(CareRecipient)
 class CareRecipientAdmin(admin.ModelAdmin):
