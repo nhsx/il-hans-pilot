@@ -44,7 +44,7 @@ def admin_login_redirect(request):
     return redirect("/saml/login")
 
 def admin_logout_redirect(request):
-    return redirect(f"{settings.COGNITO_CONFIG['ENDPOINT']}/logout?client_id={quote(settings.COGNITO_CLIENT_ID)}&logout_uri={quote(request.build_absolute_uri('/admin/'))}")
+    return redirect(f"{settings.COGNITO_CONFIG['ENDPOINT']}/logout?client_id={quote(settings.COGNITO_CONFIG['CLIENT_ID'])}&logout_uri={quote(request.build_absolute_uri('/admin/'))}")
 
 @admin.register(CareRecipient)
 class CareRecipientAdmin(admin.ModelAdmin):
