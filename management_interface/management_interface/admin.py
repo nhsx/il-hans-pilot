@@ -40,7 +40,7 @@ def set_obj_created_updated(request, obj, form):
         obj.created_by = request.user
     return obj
 
-def admin_login_redirect():
+def admin_login_redirect(request):
     return redirect("/saml/login")
 
 def admin_logout_redirect(request):
