@@ -51,6 +51,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "django.contrib.auth.middleware.PersistentRemoteUserMiddleware",
 ]
 
 ROOT_URLCONF = "management_interface.urls"
@@ -144,3 +145,18 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # set the max IN MEMORY upload size to 25MiB
 FILE_UPLOAD_MAX_MEMORY_SIZE = 26214400
 DATA_UPLOAD_MAX_MEMORY_SIZE = 26214400
+
+# Cognito Settings
+AUTHENTICATION_BACKENDS = [
+    "django_cognito_saml.backends.SuperUserBackend",
+]
+
+LOGIN_REDIRECT_URL = "/admin/"
+
+COGNITO_CONFIG = {
+    "ENDPOINT": SETTINGS.COGNITO_ENDPOINT,
+    "CLIENT_ID": SETTINGS.COGNITO_CLIENT_ID,
+    "CLIENT_SECRET": SETTINGS.COGNITO_CLIENT_SECRET,
+    "JWKS_URI": SETTINGS.COGNITO_JWKS_URI,
+    "REDIRECT_URI": SETTINGS.COGNITO_REDIRECT_URI
+}

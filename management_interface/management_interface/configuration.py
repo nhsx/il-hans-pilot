@@ -19,6 +19,11 @@ class Settings:
         "CSRF_TRUSTED_ORIGINS", "http://localhost"
     )
     CSV_IMPORT_MAX_LINES: int = 1000
+    COGNITO_ENDPOINT: str = os.environ.get("COGNITO_ENDPOINT", "change_me")
+    COGNITO_CLIENT_ID: str = os.environ.get("COGNITO_CLIENT_ID", "change_me")
+    COGNITO_CLIENT_SECRET: str = os.environ.get("COGNITO_CLIENT_SECRET", "change_me")
+    COGNITO_JWKS_URI: str = os.environ.get("COGNITO_JWKS_URI", "change_me")
+    COGNITO_REDIRECT_URI: str = os.environ.get("COGNITO_REDIRECT_URI", "change_me")
 
 
 SETTINGS = Settings()

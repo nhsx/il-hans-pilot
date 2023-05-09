@@ -14,17 +14,22 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 
 from .views import care_provider_search
+from .admin import admin_login_redirect, admin_logout_redirect, admin_logout_success
 
 urlpatterns = [
+    path("admin/login/", admin_login_redirect),
+    path("admin/logout/success/", admin_logout_success),
+    path("admin/logout/", admin_logout_redirect),
     path("admin/", admin.site.urls),
     path(
         "care-provider-location/_search/",
         care_provider_search,
         name="care_provider_search",
     ),
+    path("saml/", include("django_cognito_saml.urls")),
 ]
 
 admin.site.site_header = "Hospital Activity Notification Service Management Interface"
