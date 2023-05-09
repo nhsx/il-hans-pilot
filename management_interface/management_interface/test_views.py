@@ -106,7 +106,7 @@ class AdminCareProviderLocationTests(TestCase):
             is_staff=True,
             is_superuser=True,
         )
-        self.client.login(username="admin", password="password")
+        self.client.force_login(self.user)
 
     def test_admin_upload_empty_csv_file(self):
         response = self.client.post(
@@ -187,7 +187,7 @@ class AdminCareRecipientTests(TestCase):
             is_staff=True,
             is_superuser=True,
         )
-        self.client.login(username="admin", password="password")
+        self.client.force_login(self.user)
 
     def test_change_view__does_not_display_fields_not_stored_in_database(
         self,
@@ -200,7 +200,7 @@ class AdminCareRecipientTests(TestCase):
         )
         response = self.client.get(self._get_admin_change_view_url(care_recipient))
         response_text_lower = response.content.decode("utf-8").lower()
-        assert response.status_code == 200
+        self.assertEqual(response.status_code, HTTPStatus.OK)
         assert "given name" not in response_text_lower
         assert "family name" not in response_text_lower
         assert "nhs number" not in response_text_lower
